@@ -220,7 +220,8 @@ run_seurat = function (so, label = "", batch = NULL, features_to_view = NULL,
   }
   print("Default dims to use: " %+% dimnum)
 
-  if (length(mtlabel) > 1) {
+  # bug fixed 20241217
+  if (length(mtlabel) > 0) { 
     mtlist = rownames(so)[grep(mtlabel, toupper(rownames(so)))]
   } else {
     mtlist = mtlabel
@@ -237,6 +238,12 @@ run_seurat = function (so, label = "", batch = NULL, features_to_view = NULL,
     so = Seurat::RenameCells(so, add.cell.id = label)
   }
   all.genes = rownames(so)
+  # bug fixed 20241217
+  if (as.numeric(packageVersion('Seurat')[1,1]) >= 5) {
+    hiexpr.genes = apply(Seurat::LayerData(so, assay = "RNA", layer = "counts"), 1, mean)
+  } else {
+    hiexpr.genes = apply(Seurat::GetAssayData(so, assay = "RNA", slot = "counts"), 1, mean)
+  }
   hiexpr.genes = apply(so@assays$RNA@counts, 1, mean)
   so <- Seurat::PercentageFeatureSet(so, features = intersect(mtlist,
                                                               rownames(so)), col.name = "percent.mt")
@@ -272,20 +279,18 @@ run_seurat = function (so, label = "", batch = NULL, features_to_view = NULL,
     dstamp = getdstamp()
     saveRDS(so, file.path(so_dir, "so." %+% dstamp %+% ".rds"))
   }
-  so <- Seurat::RunUMAP(so, dims = selected_pca_dims, verbose = F, seed.use = 0)
-  so <- Seurat::FindNeighbors(so, dims = selected_pca_dims,
-                              compute.SNN = T, prune.SNN = 0, verbose = F, force.recalc = T)
-  so <- Seurat::FindClusters(so, resolution = clustRes, verbose = F,
-                             group.singletons = T, n.iter = 10, random.seed = 0)
+  so <- Seurat::RunUMAP(so, dims = selected_pca_dims, verbose = FALSE, seed.use = 0)
+  # bug fixed 20241217
+  so <- Seurat::FindNeighbors(so, dims = selected_pca_dims, compute.SNN = TRUE, prune.SNN = 0)
+  so <- Seurat::FindClusters(so, resolution = clustRes, verbose = F, group.singletons = T, n.iter = 10, random.seed = 0)
   colorlist = get_random_colorlist(so@meta.data[, "seurat_clusters"])
   colorlist = c(addNamedColorList, colorlist)
-  p_dimplot <- UMAPPlot(so, group.by = "seurat_clusters", pt.size = 0.6, label = TRUE) +
+  p_dimplot <- Seurat::DimPlot(so, group.by = "seurat_clusters", pt.size = 2.5, reduction = "umap", label = TRUE, raster = TRUE) +
     ggplot2::scale_color_manual(values = colorlist) +
-    NoLegend() + NoAxes()
+    Seurat::NoLegend() + Seurat::NoAxes()
   savePlot(pObj = p_dimplot, pDir = so_dir, pType = "umap", pName = "res0.8", pFmt = "pdf",
          pHt = 5.2, pWd = 5)
-  p_umi <- Seurat::FeaturePlot(so, feature = "nCount_" %+% assay,
-                               pt.size = 0.6, order = T) + NoAxes()
+  p_umi <- Seurat::FeaturePlot(so, feature = "nCount_" %+% assay, pt.size = 2.5, order = TRUE, raster = TRUE) + Seurat::NoAxes()
   savePlot(pObj = p_umi, pDir = so_dir, pType = "umap", pName = "seqDepth", pFmt = "pdf", pWd = 5.2,
          pHt = 5)
   gc()
@@ -298,9 +303,9 @@ run_seurat = function (so, label = "", batch = NULL, features_to_view = NULL,
       colorlist = get_random_colorlist(prior_metadata[, ifeature])
       colorlist = c(addNamedColorList, colorlist)
       if (uniqlen(prior_metadata[, ifeature]) > 1 & uniqlen(prior_metadata[, ifeature]) < 80) {
-        p = UMAPPlot(so, group.by = ifeature, pt.size = 0.6, label = T) +
+        p = Seurat::DimPlot(so, group.by = ifeature, pt.size = 2.5, reduction = "umap", label = TRUE, raster = TRUE) +
           ggplot2::scale_color_manual(values = colorlist) +
-          NoAxes()
+          Seurat::NoAxes()
         savePlot(pObj = p, pType = "umap", pName = ifeature, pDir = so_dir, pFmt = "pdf", pWd = 6.5, pHt = 5)
       }
     }
@@ -311,9 +316,9 @@ run_seurat = function (so, label = "", batch = NULL, features_to_view = NULL,
         colorlist = get_random_colorlist(ifeature)
         colorlist = c(addNamedColorList, colorlist)
         if (uniqlen(so@meta.data[,ifeature]) > 1 & uniqlen(so@meta.data[, ifeature]) < 80) {
-          p = UMAPPlot(so, group.by = ifeature, pt.size = 0.6, label = T) +
+          p = Seurat::DimPlot(so, group.by = ifeature, pt.size = 2.5, reduction = "umap", label = TRUE, raster = TRUE) +
             ggplot2::scale_color_manual(values = colorlist) +
-            NoAxes()
+            Seurat::NoAxes()
           savePlot(pObj = p, pType = "umap", pName = ifeature, pDir = so_dir, pFmt = "pdf", pWd = 6.5, pHt = 5)
         }
       }
