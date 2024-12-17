@@ -433,23 +433,25 @@ run_combined_seurat = function(solist_dir, save_dir = NULL, ifReturn = FALSE,
 
     update_so(so = merged, so_dir = save_dir, meta.only = F)
 
-    DefaultAssay(merged) = "RNA"
     merged <- Seurat::ScaleData(merged)
     # bug fixed 20241217
     if (as.numeric(packageVersion("Seurat")[1,1]) >= 5){
-     features_for_pca = setdiff(var.genes.integrated,rownames(merged)[apply(GetAssayData(merged, layer = "counts", assay = "RNA"),1,sum) < ncol(merged)*0.0005]) 
+      counts_layers =  grep("counts",Layers(merged),value = T)
+      if (length(counts_layers) > 1){
+        counts_layers = counts_layers[1]
+      }
+      features_for_pca = setdiff(var.genes.integrated, rownames(merged)[apply(GetAssayData(merged, layer = counts_layers, assay = "RNA"),1,sum) < ncol(merged)*0.0005]) 
      } else {
-      features_for_pca = setdiff(var.genes.integrated,rownames(merged)[apply(GetAssayData(merged, slot = "counts", assay = "RNA"),1,sum) < ncol(merged)*0.0005])       
-     } 
-    
+      features_for_pca = setdiff(var.genes.integrated, rownames(merged)[apply(GetAssayData(merged, slot = "counts", assay = "RNA"),1,sum) < ncol(merged)*0.0005])       
+    }
     merged <- Seurat::RunPCA(merged, npcs = dimnum, features = features_for_pca)
     p_elbowplot_rnapc = Seurat::ElbowPlot(merged, ndims = dimnum, reduction="pca")
 
     selected_pca_dims = with(p_elbowplot_rnapc$data, dims[stdev >= 1.25])
     print(selected_pca_dims)
-    merged <- Seurat::RunHarmony(merged, group.by.vars = c("orig.ident"), reduction = "pca", dims.use = selected_pca_dims)
-    merged <- Seurat::RunUMAP(merged, dims=selected_pca_dims, reduction = "harmony", verbose=F, seed.use=0)
-    merged <- Seurat::RunTSNE(merged, dims=selected_pca_dims, reduction = "harmony", check_duplicates = FALSE)
+    merged <- harmony::RunHarmony(merged, group.by.vars = c("orig.ident"), reduction = "pca", reduction.save = "harmony", dims.use = selected_pca_dims)
+    merged <- Seurat::RunUMAP(merged, dims=selected_pca_dims, reduction = "harmony", seed.use=0)
+    # merged <- Seurat::RunTSNE(merged, dims=selected_pca_dims, reduction = "harmony", check_duplicates = FALSE)
     merged <- Seurat::FindNeighbors(merged, dims=selected_pca_dims, compute.SNN=T, k.param = 10)
     merged <- Seurat::FindClusters(merged, resolution=1, verbose=F)
 
