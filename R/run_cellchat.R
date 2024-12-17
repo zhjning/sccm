@@ -73,7 +73,13 @@ run_cellchat = function(so, feature.name, batch.name = "orig.ident", output=NULL
     if (storeResampledSO){
       saveRDS(so.sub.bts, file.path(oDir,ident_id %+% ".bts" %+% minCNUM.tot %+% ".prop" %+% sampleProp %+% "minCell" %+% minCNUM.new %+% ".rds"))
     }
-    data.input <- GetAssayData(so, assay = "RNA", slot = "data")
+    # bug fixed 241217
+    if (as.numeric(packageVersion("Seurat")[1,1]) >= 5){
+        data_layers <- grep("data", Layers(so), value = T)[1]
+        data.input <- GetAssayData(so, assay = "RNA", layer = data_layers)
+      } else {
+        data.input <- GetAssayData(so, assay = "RNA", slot = "data")
+    }
     if(!is.null(customedSymbolList)){
       idmapped = customedSymbolList[rownames(data.input)]
       idmapped[is.na(idmapped)] = rownames(data.input)[is.na(idmapped)]

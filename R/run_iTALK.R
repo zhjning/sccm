@@ -49,7 +49,13 @@ run_iTALK = function(so, feature.name = "ct.major", batch.name = "orig.ident",
             if (file.exists(file.path(storedResampledSODir, so.sub.btsPath))){
               so.sub.bts = loadRDS(file.path(storedResampledSODir, so.sub.btsPath))
               ## calculate
-              data <-  GetAssayData(so, assay = "RNA", slot = "counts") # turn to cell x genes for rawParse
+              # bug fixed 241217
+              if (as.numeric(packageVersion("Seurat")[1,1]) >= 5){
+                counts_layers <- grep("counts", Layers(so), value = T)
+                data <-  GetAssayData(so, assay = "RNA", layer = counts_layers) # turn to cell x genes for rawParse
+              } else {
+                data <-  GetAssayData(so, assay = "RNA", slot = "counts") # turn to cell x genes for rawParse
+              }
               if(!is.null(customedSymbolList)){
                 idmapped = customedSymbolList[rownames(data.input)]
                 idmapped[is.na(idmapped)] = rownames(data.input)[is.na(idmapped)]
