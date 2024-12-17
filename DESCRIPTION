@@ -1,0 +1,13 @@
+Package: sccm
+Type: Package
+Title: A computational framework that predicts triple-cell relationship regarding the biological functions of a certain cell type
+Version: 0.1.0
+Author: jzhang
+Maintainer: Jianing Zhang <zhjning@hotmail.com>
+Description: We propose a novel model based on a causal mediation framework to analyze functional regulatory relationships among three cells. 
+    This model evaluates whether Cell A can regulate the specific functions of Cell C through an intermediate Cell B. Existing tools typically rely on the expression of ligand-receptor genes within cell subgroups, which does not adequately reflect whether the specific function of a target cell might be influenced by another cell type and an intermediate cell. Our tool utilizes intercellular interactions measured by commonly used intercellular functional interaction tools to assess whether a cell’s specific function is related to a third-party cell, allowing users to switch between different methods for measuring causal relationships to assess the stability of the results.    
+License: MIT
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.1
+StagedInstall: no
