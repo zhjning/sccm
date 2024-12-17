@@ -244,7 +244,6 @@ run_seurat = function (so, label = "", batch = NULL, features_to_view = NULL,
   } else {
     hiexpr.genes = apply(Seurat::GetAssayData(so, assay = "RNA", slot = "counts"), 1, mean)
   }
-  hiexpr.genes = apply(so@assays$RNA@counts, 1, mean)
   so <- Seurat::PercentageFeatureSet(so, features = intersect(mtlist,
                                                               rownames(so)), col.name = "percent.mt")
   so <- Seurat::NormalizeData(so, normalization.method = "LogNormalize",
