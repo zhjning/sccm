@@ -63,7 +63,11 @@ so = load_so(file.path(treatedDir, paste0(dsname, "_integrated_CD14Mono_CD16Mono
 p = UMAPPlot(so, group.by = "CellType", cols = ct.colorlist)
 savePlot(p, file.path(file.path(treatedDir, paste0(dsname, "_integrated_CD14Mono_CD16Mono_CD4T/"))), "umap", "celltype", pWd = 6.3, pHt = 3, "pdf")
 ## running cellchat to estimate the interactions
-data.input <- GetAssayData(so, assay = "RNA", slot = "data")
+if (as.numeric(packageVersion("Seurat")[1,1] > 5)){
+  data.input <- GetAssayData(so, assay = "RNA", layer = "data") 
+ } else {
+  data.input <- GetAssayData(so, assay = "RNA", slot = "data") 
+ }
 meta <- data.frame(ct = so$CellType, row.names = Cells(so), sample = so$orig.ident)
 ctlist = unique(so$CellType)
 ## generate potential regulatory relationships
