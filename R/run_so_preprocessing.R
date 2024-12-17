@@ -506,8 +506,13 @@ estimate_pretreated_so_by_refMarkers = function(so, refList, clusterMarkerPath, 
       tmp.mlen = length(tmp.markers)
       if (tmp.mlen > 0){
         if (tmp.clusters.num %>% length == 1){
-          tmp.markers.expr = AverageExpression(subset(so, cells = tmp.cellnames), features = tmp.markers, assays = "RNA", slot = "counts")
-          tmp.markers.expr.ctrl = AverageExpression(subset(so, cells = setdiff(Cells(so),tmp.cellnames)), features = tmp.markers, assays = "RNA", slot = "counts")
+          if (as.numeric(packageVersion("Seurat")[1,1]) >= 5){
+            tmp.markers.expr = AverageExpression(subset(so, cells = tmp.cellnames), features = tmp.markers, assays = "RNA", layer = "counts")
+            tmp.markers.expr.ctrl = AverageExpression(subset(so, cells = setdiff(Cells(so),tmp.cellnames)), features = tmp.markers, assays = "RNA", layer = "counts")
+          } else {
+            tmp.markers.expr = AverageExpression(subset(so, cells = tmp.cellnames), features = tmp.markers, assays = "RNA", slot = "counts")
+            tmp.markers.expr.ctrl = AverageExpression(subset(so, cells = setdiff(Cells(so),tmp.cellnames)), features = tmp.markers, assays = "RNA", slot = "counts")
+          }          
           tmp.res = data.frame(ct = rep(ct, tmp.mlen),
                                gene = tmp.markers, cluster = rep(names(tmp.clusters.num), tmp.mlen),
                                pos = tmp.markers.expr$RNA[,1],
@@ -520,8 +525,13 @@ estimate_pretreated_so_by_refMarkers = function(so, refList, clusterMarkerPath, 
             final_signal = rbind(final_signal, tmp.res)
           }
         } else {
-          tmp.markers.expr = AverageExpression(subset(so, cells = tmp.cellnames), features = tmp.markers, group.by = clusterName, assays = "RNA", slot = "counts")
-          tmp.markers.expr.ctrl = AverageExpression(subset(so, cells = setdiff(Cells(so),tmp.cellnames)), features = tmp.markers, assays = "RNA", slot = "counts")
+          if (as.numeric(packageVersion("Seurat")[1,1]) >= 5){
+            tmp.markers.expr = AverageExpression(subset(so, cells = tmp.cellnames), features = tmp.markers, group.by = clusterName, assays = "RNA", layer = "counts")
+            tmp.markers.expr.ctrl = AverageExpression(subset(so, cells = setdiff(Cells(so),tmp.cellnames)), features = tmp.markers, assays = "RNA", layer = "counts")
+          } else {
+            tmp.markers.expr = AverageExpression(subset(so, cells = tmp.cellnames), features = tmp.markers, group.by = clusterName, assays = "RNA", slot = "counts")
+            tmp.markers.expr.ctrl = AverageExpression(subset(so, cells = setdiff(Cells(so),tmp.cellnames)), features = tmp.markers, assays = "RNA", slot = "counts")
+          }
           tmp.res = data.frame(ct = rep(ct, tmp.mlen*length(tmp.clusters.num)),
                                gene = rep(tmp.markers, length(tmp.clusters.num)),
                                cluster = rep(names(tmp.clusters.num), each = tmp.mlen),
