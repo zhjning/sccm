@@ -240,7 +240,7 @@ run_seurat = function (so, label = "", batch = NULL, features_to_view = NULL,
   all.genes = rownames(so)
   # bug fixed 20241217
   if (as.numeric(packageVersion('Seurat')[1,1]) >= 5) {
-    hiexpr.genes = apply(SeuratObject::LayerData(so, assay = "RNA", layer = "counts"), 1, mean)
+    hiexpr.genes = apply(Seurat::GetAssayData(so, assay = "RNA", layer = "counts"), 1, mean)
   } else {
     hiexpr.genes = apply(Seurat::GetAssayData(so, assay = "RNA", slot = "counts"), 1, mean)
   }
