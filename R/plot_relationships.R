@@ -60,8 +60,9 @@ plot_cell_mediation_plot = function (fit, maxx = 80, maxy = 30, height = 5, widt
                                                 df4$y[i], height = height, width = width, fill = ifelse(usecolor,
                                                                                                         "yellow", "white"))
   }
-  p <- p + geom_text(aes_string(label = "text"), size = base_size,
-                     family = base_family)
+  # adjust label position, move from rectangle's center to the bottom
+  p <- p + geom_text(aes_string(label = "text" ), size = base_size,
+                     family = base_family, nudge_y = -5)
   if (clean) {
     p <- p + theme_clean(base_size = base_size, base_family = base_family)
   }
