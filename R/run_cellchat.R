@@ -67,18 +67,24 @@ run_cellchat = function(so, feature.name, batch.name = "orig.ident", output=NULL
     oDir = output
   }
   createDir(oDir)
-  for (ident_id in unique(so@meta.data[,batch.name])){
-    so.sub <- subset(so, cells=Cells(so)[so@meta.data[,batch.name] == ident_id])
-    so.sub.bts = bootstrapSO(so.sub, feature.name = feature.name, minCNUM.tot = minCNUM.tot, sampleProp = sampleProp, minCNUM.new = minCNUM.new, runs = runs, suggestedRunTimes = suggestedRunTimes,  returnNameOnly = T)
-    if (storeResampledSO){
-      saveRDS(so.sub.bts, file.path(oDir,ident_id %+% ".bts" %+% minCNUM.tot %+% ".prop" %+% sampleProp %+% "minCell" %+% minCNUM.new %+% ".rds"))
-    }
-    # bug fixed 241217
+  # bug fixed 241218
+  for (i in 1:uniqlen(so@meta.data[,batch.name])){
     if (as.numeric(packageVersion("Seurat")[1,1]) >= 5){
-        data_layers <- grep("data", Layers(so), value = T)[1]
-        data.input <- GetAssayData(so, assay = "RNA", layer = data_layers)
-      } else {
-        data.input <- GetAssayData(so, assay = "RNA", slot = "data")
+      ident_id <- unique(so@meta.data[,batch.name])[i]
+      data_layers <- grep("data", Layers(so), value = T)[1]
+      so.sub <- subset(so, cells=Cells(so)[so@meta.data[,batch.name] == ident_id])
+      so.sub.bts = bootstrapSO(so.sub, feature.name = feature.name, minCNUM.tot = minCNUM.tot, sampleProp = sampleProp, minCNUM.new = minCNUM.new, runs = runs, suggestedRunTimes = suggestedRunTimes,  returnNameOnly = T)
+      if (storeResampledSO){
+        saveRDS(so.sub.bts, file.path(oDir,ident_id %+% ".bts" %+% minCNUM.tot %+% ".prop" %+% sampleProp %+% "minCell" %+% minCNUM.new %+% ".rds"))
+      }
+      data.input <- GetAssayData(so, assay = "RNA", layer = data_layers)
+    } else {
+      so.sub <- subset(so, cells=Cells(so)[so@meta.data[,batch.name] == ident_id])
+      so.sub.bts = bootstrapSO(so.sub, feature.name = feature.name, minCNUM.tot = minCNUM.tot, sampleProp = sampleProp, minCNUM.new = minCNUM.new, runs = runs, suggestedRunTimes = suggestedRunTimes,  returnNameOnly = T)
+      if (storeResampledSO){
+        saveRDS(so.sub.bts, file.path(oDir,ident_id %+% ".bts" %+% minCNUM.tot %+% ".prop" %+% sampleProp %+% "minCell" %+% minCNUM.new %+% ".rds"))
+      }
+      data.input <- GetAssayData(so, assay = "RNA", slot = "data")
     }
     if(!is.null(customedSymbolList)){
       idmapped = customedSymbolList[rownames(data.input)]

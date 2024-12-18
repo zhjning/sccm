@@ -434,13 +434,13 @@ run_combined_seurat = function(solist_dir, save_dir = NULL, ifReturn = FALSE,
     update_so(so = merged, so_dir = save_dir, meta.only = F)
 
     merged <- Seurat::ScaleData(merged)
-    # bug fixed 20241217
+    # bug fixed 20241218
     if (as.numeric(packageVersion("Seurat")[1,1]) >= 5){
       counts_layers =  grep("counts",Layers(merged),value = T)
-      if (length(counts_layers) > 1){
-        counts_layers = counts_layers[1]
-      }
-      features_for_pca = setdiff(var.genes.integrated, rownames(merged)[apply(GetAssayData(merged, layer = counts_layers, assay = "RNA"),1,sum) < ncol(merged)*0.0005]) 
+      features_for_pca = var.genes.integrated
+      for (counts_layer in counts_layers){  
+        features_for_pca = setdiff(features_for_pca, rownames(merged)[apply(GetAssayData(merged, layer = counts_layer, assay = "RNA"),1,sum) < ncol(merged)*0.0005]) 
+      }       
      } else {
       features_for_pca = setdiff(var.genes.integrated, rownames(merged)[apply(GetAssayData(merged, slot = "counts", assay = "RNA"),1,sum) < ncol(merged)*0.0005])       
     }

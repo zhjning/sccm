@@ -184,7 +184,8 @@ generate_matrix_for_CMA = function(so, feature.name, int.type, dataDir, ctlist_t
               message("Running for data:" %+% ident_id %+% " ," %+% "run #" %+% irun %+% ", cells:" %+% cts)
               cts <- cts %>% strsplit(",") %>% unlist
               Sender <- cts[1]; Mediator <- cts[2]; Receiver <- cts[3];
-              if (length(intersect(rownames(iso.cellchat@net$weight), c(Sender,Mediator,Receiver))) == 3){
+              # typo fixed here 241218
+              if (length(intersect(rownames(iso.cellchat@net$prob), c(Sender,Mediator,Receiver))) == 3){
                 sender.signal <- median(iso@meta.data[iso@meta.data[,feature.name] == Sender,"tot.ligands"]) # X
                 mediator.signal <- median(iso@meta.data[iso@meta.data[,feature.name] == Mediator,"tot.ligands"]) # M
                 receiverFuncOfInterest.signal <- median(iso@meta.data[iso@meta.data[,feature.name] == Receiver,funcNames]) # Y

@@ -22,7 +22,7 @@
 #' @param mode default 1
 #' @return a ggplot object
 #' @export
-plot_cell_mediation_plot = function (fit, maxx = 80, maxy = 30, height = 5, width = 5, base_size = 5, base_family = "Arial", title_text = "", title_size = 10,
+plot_cell_mediation_plot = function (fit, maxx = 80, maxy = 30, height = 5, width = 5, base_size = 10, base_family = "Arial", title_text = "", title_size = 12,
                                      usecolor = TRUE, cols = NULL, clean = TRUE, whatLabels = "std", useLabel=FALSE, regression = TRUE, mode = 1){
   packs_to_check = c("ggplot2","lavaan","plyr","extrafont","grDevices")
   load_packages(packs_to_check)
