@@ -402,10 +402,11 @@ run_CausalMediation = function(mat4mca,
          total := c + a*b
       '
       fit<-sem(model=model4cma, data=data4cma, meanstructure=TRUE, std.lv=TRUE, estimator="MLM")
-
-      if (length(which(summary(fit,fit.measures=TRUE)$pe[c(1,2), "pvalue"] < pval4sig)) == 2){
+      # bug fixed according to error message 'operator is invalid for atomic vectors', 241218
+      fit_summary<-summary(fit,fit.measures=TRUE)
+      if (length(which(fit_summary["pe"][c(1,2), "pvalue"] < pval4sig)) == 2){
         fitList[[paste_with_sep(cts)]] = fit
-        tmp_signs = sign(summary(fit,fit.measures=TRUE)$pe[c(1,2), "est"])
+        tmp_signs = sign(fit_summary["pe"][c(1,2), "est"])
         if (tmp_signs[1]==tmp_signs[2]){
           fitList_same_sign[[paste_with_sep(cts)]] = fit
         }
