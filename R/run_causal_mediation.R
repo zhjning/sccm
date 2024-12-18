@@ -416,16 +416,16 @@ run_CausalMediation = function(mat4mca,
               p <- plot_cell_mediation_plot(fit, cols = named_vec(c("X","M1","Y"),
                                                                   colList[cts] %>% as.character),
                                             title_text = "Cell types:\n" %+% paste_with_sep(cts),
-                                            base_size = 2.5, base_family = "mono",
-                                            title_size = 6)
+                                            base_size = 6, base_family = "Helvetica",
+                                            title_size = 12)
               pList[[paste_with_sep(cts)]] = p
             }
           } else {
             p <- plot_cell_mediation_plot(fit, cols = named_vec(c("X","M1","Y"),
                                                                 colList[cts] %>% as.character),
                                           title_text = "Cell types:\n" %+% paste_with_sep(cts),
-                                          base_size = 2.5, base_family = "mono",
-                                          title_size = 6)
+                                          base_size = 6, base_family = "Helvetica",
+                                          title_size = 12)
             pList[[paste_with_sep(cts)]] = p
           }
         }
