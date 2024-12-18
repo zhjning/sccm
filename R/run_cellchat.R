@@ -71,8 +71,8 @@ run_cellchat = function(so, feature.name, batch.name = "orig.ident", output=NULL
   for (i in 1:uniqlen(so@meta.data[,batch.name])){
     if (as.numeric(packageVersion("Seurat")[1,1]) >= 5){
       ident_id <- unique(so@meta.data[,batch.name])[i]
-      data_layers <- grep("data", Layers(so), value = T)[1]
-      so.sub <- subset(so, cells=Cells(so)[so@meta.data[,batch.name] == ident_id])
+      data_layers <- grep("^data", Layers(so), value = T)[i]
+      so.sub <- subset(so, cells=Cells(so, assay = "RNA", layer = data_layers))
       so.sub.bts = bootstrapSO(so.sub, feature.name = feature.name, minCNUM.tot = minCNUM.tot, sampleProp = sampleProp, minCNUM.new = minCNUM.new, runs = runs, suggestedRunTimes = suggestedRunTimes,  returnNameOnly = T)
       if (storeResampledSO){
         saveRDS(so.sub.bts, file.path(oDir,ident_id %+% ".bts" %+% minCNUM.tot %+% ".prop" %+% sampleProp %+% "minCell" %+% minCNUM.new %+% ".rds"))

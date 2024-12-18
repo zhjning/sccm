@@ -1,0 +1,137 @@
+---
+title: "sccm demo for ATAA"
+author: "Jianing Zhang"
+date: "2024-12-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+if (!require(remotes)) install.packages("remotes")
+require(R.filesets)
+require(Seurat)
+require(Matrix)
+require(dplyr)
+require(purrr)
+require(tibble)
+require(stringr)
+require(CellChat) 
+# remotes::install_github("sqjin/CellChat")
+require(iTALK)
+# remotes::install_github("Coolgenome/iTALK")
+require(sccm)
+# remotes::install_github("zhjning/sccm")
+
+projName = "ATAA"
+workDir = file.path("~/Documents/workspace/softwares/0_myRPacks/scCellMediator2024/publish_version/sccm_out/",projName)
+dataDir = file.path(workDir, "data")
+scriptDir = file.path(workDir, "script")
+treatedDir = file.path(workDir, "out")
+
+sapply(c(workDir, dataDir, scriptDir, treatedDir), sccm::createDir)
+setwd(workDir)
+```
+
+## Load dataset from Single Cell Portal
+Import raw 10x dataset and meta. Download the test ATAA dataset from SCP1909. You need to register an SCP account online to download this dataset.
+Move or softlink the downloaded dataset to $dataDir.
+
+```{r ATAA_data_import}
+dsname = "ATAA" # dataset name
+meta.raw = read.delim(file.path(dataDir, "AorticAneurysm_MetaData_V1.txt"))[-1,]
+mtx = readMM(file.path(dataDir, "AorticAneurysm_Expression_Matrix_raw_counts_V1.mtx.gz"))
+cells = read.delim(file.path(dataDir, "AorticAneurysm_Expression_Matrix_barcodes_V1.tsv.gz"), header=F)
+features = read.delim(file.path(dataDir, "AorticAneurysm_Expression_Matrix_genes_V1.tsv.gz"), header=F)
+colnames(mtx) = cells[,1]
+rownames(mtx) = features[,1]
+so = CreateSeuratObject(mtx, assay = "RNA")
+meta.raw = meta.raw %>% 
+  filter(NAME %in% Cells(so)) %>% 
+  column_to_rownames("NAME")
+```
+
+```{r Sample_pretreatment}
+## pretreating dataset and calling seurat to generate the seurat object for following analysis
+so = subset(so, cells = rownames(meta.raw))
+so = AddMetaData(so, meta.raw[Cells(so),], colnames(meta.raw)) # so@meta.data[,c("nCount_RNA","nFeature_RNA","percent.mt")] = NULL
+so$orig.ident = so$biosample_id
+so$CellType = so$celltype
+so$Condition = so$disease__ontology_label
+solist = separate_so(so = so, batch = "orig.ident")
+ct.colorlist = get_random_colorlist(reduce(lapply(solist, function(tmp.so) tmp.so$CellType %>% unique), union))
+saveRDS(ct.colorlist, file.path(treatedDir, "ct.colorlist.rds"))
+## separating single cells according to the original dataset sources and generating seurat objects for single cells per source
+for (i in 1:length(solist)){
+  sname = names(solist)[i]
+  tmp.so = solist[[i]]
+  run_seurat(tmp.so, label = sname, features_to_view = c("orig.ident", "CellType"),
+             save = T, so_dir = file.path(treatedDir, dsname), treat.cellname = F,
+             mtlabel = "MT-", min_avg = 0.01, assay = "RNA", addNamedColorList = ct.colorlist,
+             scale_factor = 1e6, min_bin = 50, min_cutoff = c(0.01, Inf), calcClustMarker = F,
+             dimnum = 20, dim_sd = 1.25, dim_pval = 0.01, clustRes = 0.8) # dimnum can be set at 'auto'
+}
+```
+
+## Study the relationship between CD4+ T cells, CD16+ Monocytes and CD14+ Monocytes 
+Generate a combined seurat object for triple-cell causal mediation analysis only including the three cell types to study
+
+```{r triple_cell_subset}
+roi_label = "_integrated_VSMC2_Fibroblast_Macrophage/"
+celltypeList = c("02. VSMC2","06. Fibroblast","14. Macrophage")
+run_combined_seurat(solist_dir = file.path(treatedDir, dsname), ## this folder only allows to store separated datasets rather than the integrated ones
+                    save_dir = file.path(treatedDir, paste0(dsname, roi_label)), 
+                    ifReturn = FALSE, 
+                    filterRules = 'CellType %in% c("02. VSMC2","06. Fibroblast","14. Macrophage") & nFeature_RNA > 500 & nCount_RNA > 1000', 
+                    acceptRules = 'CellType,>,20', 
+                    dimnum = 20, k.anchor = 5, k.filter = 50, k.weight = 20)
+```
+
+## Prepare the dataset and calling seurat to generate the seurat object for following analysis
+
+```{r}
+so = load_so(file.path(treatedDir, paste0(dsname, roi_label)))
+p = UMAPPlot(so, group.by = "CellType", cols = ct.colorlist, raster = T, label = T, pt.size = 2.5, split.by = "Condition")
+savePlot(p, file.path(file.path(treatedDir, paste0(dsname, roi_label))), "umap", "celltype", pWd = 6.3, pHt = 3, "pdf")
+## running cellchat to estimate the interactions
+data_layers = grep("^data",Layers(so),value =T)[1]
+data.input <- GetAssayData(so, assay = "RNA", layer = data_layers)
+meta <- data.frame(ct = so$CellType, row.names = Cells(so), sample = so$orig.ident)
+ctlist = unique(so$CellType)
+## generate potential regulatory relationships
+ctlist_to_check <- generate_triple_ct_model(ctlist,
+                                            cells_to_fix = named_vec(c(3), "02. VSMC2"),
+                                            keep_or_remove = "keep")
+```
+
+```{r Determine the function to detect}
+## search functions about the cell activation and differentiation of monocytes 
+get_functions_to_view("vascular_associated_smooth_muscle_contraction", mod = "inspect", overlapKeywords = TRUE,  species = "human", cat = "C5") %>% unique
+func_list = sapply(c("GOBP_REGULATION_OF_VASCULAR_ASSOCIATED_SMOOTH_MUSCLE_CONTRACTION",
+                     "GOBP_REGULATION_OF_SMOOTH_MUSCLE_CONTRACTION",
+                     "GOBP_VASCULAR_ASSOCIATED_SMOOTH_MUSCLE_CONTRACTION"),
+                   function(x) get_functions_to_view(x, mod = "catch", overlapKeywords = FALSE, species = "human", cat = "C5"))
+funcToUse = func_list %>% unlist %>% unique 
+```
+
+## Cell-cell Communication Analysis using CellChat
+
+```{r running cell chat}
+require(jzhang.utils)
+
+cellchatDir = file.path(treatedDir, paste0(dsname, roi_label), "cellchat.out")
+createDir(cellchatDir)
+customedSymbolList = trans_features(match_geneids(rownames(data.input), species = "human", from = "ENSEMBL", to = "SYMBOL"), from = "ENSEMBL", to = "SYMBOL") #change EnsemblID+Symbol to Symbol
+run_cellchat(so, feature.name = "CellType", batch.name = "orig.ident", output = cellchatDir, 
+             minCNUM.tot = 5, sampleProp = 0.6, minCNUM.new = 5, runs = 3, species = "human", 
+             storeResampledSO = F, suggestedRunTimes = F, customedSymbolList = customedSymbolList)
+
+```
+
+```{r running iTalk}
+
+iTALKDir = file.path(treatedDir, paste0(dsname, roi_label), "iTALK.out")
+createDir(iTALKDir)
+
+```
+
